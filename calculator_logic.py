@@ -43,6 +43,7 @@ class Calculator:
             expr = expr.replace("×", "*")
             expr = expr.replace("÷", "/")
             expr = expr.replace("^", "**")
+            expr = expr.replace("x", "*")        
             # Calculate the result using eval
             self.result = eval(expr)
             # Store the result as the new expression
