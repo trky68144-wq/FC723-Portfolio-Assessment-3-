@@ -8,7 +8,8 @@ Created on Wed May  6 12:36:30 2026
 # Calculator interface
 import tkinter as tk
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, Scrollbar
+from calculator_logic import Calculator
 
 # ----------------Setting up window--------------------------------
 # window
@@ -18,7 +19,8 @@ class CalculatorApp(tk.Tk):
         self.title('Scientific Calculator')
         self.geometry('500x550')
         
-        self.is_dark_mode = False
+        #connecting to logic 
+        self.calculator_logic = Calculator()
         
         #widgets
         self.main_grid()
@@ -83,6 +85,7 @@ class CalculatorApp(tk.Tk):
         self.style.configure("NumericButton.TButton", padding=10, relief='flat', background='#FFFFFF', font=('Segoe UI', 14))
         self.style.configure("FunctionButton.TButton", padding=10, relief='flat', background='#E0E0E0', font=('Calibri', 14))
         self.style.configure("EqualButton.TButton", padding=10, relief='flat', background='#6BB1BA', font=('Calibri', 14))
+        self.style.configure("ClearButton.TButton", relief='flat', background='#F9F9F9', font=('Segoe UI', 10))
         
         # history label style
         self.style.configure("LabelStyle.TLabel", font=('Calibri', 12), foreground='#5E5D5D')
@@ -106,7 +109,8 @@ class CalculatorApp(tk.Tk):
             buttons = ttk.Button(master=frame,
                                  style=style_name,
                                  width=3,
-                                 text=char)
+                                 text=char,
+                                 command = lambda c = char:self.button_clicked(c))
             buttons.grid(row=key_row, column=key_column, sticky='nswe', padx=2, pady=2)
 
             # check if a certain number of buttons have been placed in a row
@@ -119,7 +123,7 @@ class CalculatorApp(tk.Tk):
     def create_buttons(self):
         self.styling()
         # trigonometry button, and other functions
-        further_functions = ['x²', '√', 'π', 'arcsin', 'arctan', 'arccos', 'sin', 'tan', 'cos', "radian", "log()", "ln"]
+        further_functions = ['x²', '√', 'π', 'arcsin', 'arctan', 'arccos', 'sin', 'tan', 'cos', "e", "log()", "ln"]
         # call function
         self.repeat_buttons(3, further_functions, self.middle_left_frame, 'FunctionButton.TButton')
 
@@ -132,37 +136,159 @@ class CalculatorApp(tk.Tk):
         CE - deletes both display and history
         Del - deletes the charater before the cursor
         """
-        arithmetic_functions = ['Del', 'CE', "x", "÷", "+", "-", "."]
+        arithmetic_functions = ['Del', 'CE', "×", "÷", "+", "-", "."]
         self.repeat_buttons(2, arithmetic_functions, self.bottom_right_frame, 'FunctionButton.TButton')
 
         equal_button = ttk.Button(master=self.bottom_right_frame,
                                   style='EqualButton.TButton',
                                   width=3,
-                                  text='=')
+                                  text='=',
+                                  command = lambda: self.button_clicked("="))
         equal_button.grid(row=3, column=1, sticky='nswe')
 
 # ---------------------History widget----------------------------------------
     def calculator_history(self):
+        #top bar
+        self.history_top_bar = ttk.Frame(master = self.middle_right_frame)
+        self.history_top_bar.grid(row = 0, column = 0,columnspan = 2,sticky = 'we')
+        
+        self.history_top_bar.columnconfigure(0, weight=1)
+        self.history_top_bar.columnconfigure(1, weight=0)
+        
         # history label
-        self.label = ttk.Label(master= self.middle_right_frame,
+        self.label = ttk.Label(master= self.history_top_bar,
                           style='LabelStyle.TLabel',
                           text='History')
         # scrollbar
         self.scrollbar = Scrollbar(master= self.middle_right_frame)
+        
+        #clear history button
+        self.clear_history_button = ttk.Button(master = self.history_top_bar,
+                                               text = '🗑',
+                                               style = 'ClearButton.TButton',
+                                               command = self.clear_history)
 
         # history display
         self.calculator_history_widget = tk.Text(master= self.middle_right_frame,
                                      width=20,
                                      height=10,
+                                     wrap = WORD,
                                      bg='white',
                                      yscrollcommand= self.scrollbar.set)
         self.scrollbar.config(command= self.calculator_history_widget.yview)
 
         # place widgets
-        self.label.grid(row=0, columnspan = 2, sticky='we')
-        self.calculator_history_widget.grid(row=1, sticky='nswe')
+        self.label.grid(row=0, column = 0, sticky='we')
+        self.clear_history_button.grid(row = 0, column = 1, sticky = 'e')
+        self.calculator_history_widget.grid(row=1,column = 0, sticky='nswe')
         self.scrollbar.grid(row=1, column=1, sticky='ns')
 
+#----------------------------Functionality-------------------------------------
+    def button_clicked(self, char):
+        self.calculator_logic.expression = self.display_textbox.get()
+        current_display = self.display_textbox.get()
+    
+        if char == "=":
+            if self.calculator_logic.expression == "":
+                return
+    
+            old_expression = self.calculator_logic.expression
+            result = self.calculator_logic.evaluate()
+    
+            self.update_display(result)
+            self.add_history(old_expression, result)
+    
+        elif char == "CE":
+            old_expression = self.calculator_logic.expression
+            self.calculator_logic.clear()
+            self.update_display("")
+    
+        elif char == "Del":
+            old_expression = self.calculator_logic.expression
+            self.calculator_logic.backspace()
+            self.update_display(self.calculator_logic.expression)
+    
+        elif char == "π":
+            old_expression = self.calculator_logic.expression
+            self.calculator_logic.add_to_expression(str(self.calculator_logic.get_pi()))
+            self.update_display(self.calculator_logic.expression)
+    
+        elif char == "e":
+            old_expression = self.calculator_logic.expression
+            self.calculator_logic.add_to_expression(str(self.calculator_logic.get_e()))
+            self.update_display(self.calculator_logic.expression)
+    
+        elif char == "sin":
+            result = self.calculator_logic.sine(current_display)
+            self.set_result(result)
+            self.add_history(f"sin({current_display})", result)
+    
+        elif char == "tan":
+            result = self.calculator_logic.tangent(current_display)
+            self.set_result(result)
+            self.add_history(f"tan({current_display})", result)
+    
+        elif char == "cos":
+            result = self.calculator_logic.cosine(current_display)
+            self.set_result(result)
+            self.add_history(f"cos({current_display})", result)
+    
+        elif char == "arcsin":
+            result = self.calculator_logic.arcsin(current_display)
+            self.set_result(result)
+            self.add_history(f"arcsin({current_display})", result)
+    
+        elif char == "arccos":
+            result = self.calculator_logic.arccos(current_display)
+            self.set_result(result)
+            self.add_history(f"arccos({current_display})", result)
+    
+        elif char == "arctan":
+            result = self.calculator_logic.arctan(current_display)
+            self.set_result(result)
+            self.add_history(f"arctan({current_display})", result)
+    
+        elif char == "√":
+            result = self.calculator_logic.square_root(current_display)
+            self.set_result(result)
+            self.add_history(f"√({current_display})", result)
+    
+        elif char == "x²":
+            result = self.calculator_logic.square(current_display)
+            self.set_result(result)
+            self.add_history(f"({current_display})²", result)
+    
+        elif char == "ln":
+            result = self.calculator_logic.natural_log(current_display)
+            self.set_result(result)
+            self.add_history(f"ln({current_display})", result)
+    
+        elif char == "log()":
+            result = self.logarithm(current_display)
+            self.set_result(result)
+            self.add_history(f"log({current_display})", result)
+    
+        else:
+            self.calculator_logic.add_to_expression(char)
+            self.update_display(self.calculator_logic.expression)
+
+    def set_result(self, result):
+        self.calculator_logic.expression = str(result)
+        self.update_display(result)
+
+    def update_display(self, text):
+        self.display_textbox.delete(0, tk.END)
+
+        if text is not None:
+            self.display_textbox.insert(0, str(text))
+
+    def add_history(self, expression, result):
+        if expression:
+            self.calculator_history_widget.insert(tk.END, f"{expression} = {result}\n")
+            self.calculator_history_widget.see(tk.END)
+    
+    def clear_history(self):
+        self.calculator_history_widget.delete('1.0' , tk.END)
 #main
 if __name__ == "__main__":
     app = CalculatorApp()
