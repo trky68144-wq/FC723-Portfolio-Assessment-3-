@@ -138,13 +138,6 @@ class Calculator:
         except Exception:
             return "Error"
 
-    # Calculate base raised to the power of exponent
-    def power(self, base, exponent):
-        try:
-            return float(base) ** float(exponent)
-        except Exception:
-            return "Error"
-
     # Calculate the logarithm base 10 of a number
     def logarithm(self, value):
         try:
