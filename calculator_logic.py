@@ -1,7 +1,5 @@
 # Import the math module to use mathematical functions like sin, cos, log, sqrt
 import math
-
-
 # This class contains all the calculator operations
 class Calculator:
 
