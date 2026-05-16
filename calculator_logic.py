@@ -44,6 +44,7 @@ class Calculator:
             # Replace display symbols with Python operators
             expr = expr.replace("×", "*")
             expr = expr.replace("÷", "/")
+
             expr = expr.replace("π", "math.pi")
             expr = expr.replace("e", "math.e")
 
